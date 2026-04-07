@@ -216,8 +216,8 @@ footer{padding:40px 0;border-top:1px solid var(--border)}
 <div class="container">
   <div class="hero-badge">
     <span class="dot"></span>
-    <span data-lang="zh">限量内测 · 前 200 名免费</span>
-    <span data-lang="en">Limited Beta · First 200 Free</span>
+    <span data-lang="zh">限量内测 · 基础版永久免费</span>
+    <span data-lang="en">Limited Beta · Free Core Plan Forever</span>
   </div>
 
   <h1>
@@ -241,7 +241,7 @@ footer{padding:40px 0;border-top:1px solid var(--border)}
     <span data-lang="en">✓ You're in! You're #<strong id="heroPosEn">—</strong> on the list. We'll email you soon.</span>
   </div>
   <div class="hero-hint">
-    <span>✦ <span data-lang="zh">前 200 名永久免费</span><span data-lang="en">First 200 get lifetime free</span></span>
+    <span>✦ <span data-lang="zh">内测用户基础版永久免费</span><span data-lang="en">Free core plan for early adopters</span></span>
     <span>✦ <span data-lang="zh">无垃圾邮件</span><span data-lang="en">No spam</span></span>
     <span>✦ <span data-lang="zh">随时取消</span><span data-lang="en">Unsubscribe anytime</span></span>
   </div>
@@ -452,8 +452,8 @@ footer{padding:40px 0;border-top:1px solid var(--border)}
       <div class="inc-card">
         <div class="inc-icon green">🎁</div>
         <div>
-          <div class="inc-title"><span data-lang="zh">前 200 名永久免费</span><span data-lang="en">Lifetime free for first 200</span></div>
-          <div class="inc-desc"><span data-lang="zh">产品正式上线后，早期用户锁定永久免费额度，包括未来所有付费功能。</span><span data-lang="en">Lock in free access forever — including all future paid features when we launch.</span></div>
+          <div class="inc-title"><span data-lang="zh">基础版永久免费 + Pro 专属折扣</span><span data-lang="en">Free Core Plan + Exclusive Pro Discount</span></div>
+          <div class="inc-desc"><span data-lang="zh">内测用户永久解锁基础版全部功能。未来升级 Pro 时享受早期用户专属折扣。</span><span data-lang="en">Early adopters get the core plan free forever. Upgrade to Pro later with an exclusive discount.</span></div>
         </div>
       </div>
       <div class="inc-card">
@@ -499,7 +499,7 @@ footer{padding:40px 0;border-top:1px solid var(--border)}
       <span data-lang="en">✓ You're in! You're #<strong id="btmPosEn">—</strong>. We'll be in touch.</span>
     </div>
     <div class="hero-hint">
-      <span>✦ <span data-lang="zh">前 200 名永久免费</span><span data-lang="en">First 200 lifetime free</span></span>
+      <span>✦ <span data-lang="zh">内测用户基础版永久免费</span><span data-lang="en">Free core plan for early adopters</span></span>
       <span>✦ <span data-lang="zh">无垃圾邮件</span><span data-lang="en">No spam</span></span>
     </div>
   </div>
@@ -548,19 +548,25 @@ const demoObs=new IntersectionObserver(entries=>{
 },{threshold:.3});
 demoObs.observe(document.getElementById('demoBlock'));
 
-// --- Waitlist ---
-const BASE_COUNT=47; // seed number for social proof
-function getCount(){
-  const list=JSON.parse(localStorage.getItem('sm_waitlist')||'[]');
-  return BASE_COUNT+list.length;
+// --- Supabase config ---
+const SUPABASE_URL='https://ktcuwbkkmnewolcpszjw.supabase.co';
+const SUPABASE_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt0Y3V3YmtrbW5ld29sY3Bzemp3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzE1NDAwNTEsImV4cCI6MjA4NzExNjA1MX0.YkmTIZjALPOYCb_7lLOxMFpURe29QgPweImn6cG9pD4';
+const BASE_COUNT=47;
+
+async function fetchCount(){
+  try{
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/waitlist?select=id`,{headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Prefer':'count=exact','Range':'0-0'}});
+    const count=parseInt(r.headers.get('content-range')?.split('/')[1]||'0');
+    return BASE_COUNT+count;
+  }catch(e){return BASE_COUNT}
 }
-function updateCount(){
-  const c=getCount();
+async function updateCount(){
+  const c=await fetchCount();
   ['countZh','countEn'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=c});
 }
 updateCount();
 
-function submitWaitlist(loc){
+async function submitWaitlist(loc){
   const inputId=loc==='hero'?'heroEmail':'btmEmail';
   const email=document.getElementById(inputId).value.trim();
   if(!email||!email.includes('@')){
@@ -573,17 +579,21 @@ function submitWaitlist(loc){
   btn.disabled=true;
   btn.innerHTML=lang==='zh'?'提交中...':'Submitting...';
 
-  // Store (replace with real API)
-  const list=JSON.parse(localStorage.getItem('sm_waitlist')||'[]');
-  if(list.some(x=>x.email===email)){
-    showSuccess(loc,list.findIndex(x=>x.email===email)+BASE_COUNT+1);
-    return;
+  try{
+    const r=await fetch(`${SUPABASE_URL}/rest/v1/waitlist`,{method:'POST',headers:{'apikey':SUPABASE_KEY,'Authorization':`Bearer ${SUPABASE_KEY}`,'Content-Type':'application/json','Prefer':'return=representation'},body:JSON.stringify({email})});
+    if(r.status===409||r.status===400){
+      // duplicate email
+      const c=await fetchCount();
+      showSuccess(loc,c);return;
+    }
+    const data=await r.json();
+    const c=await fetchCount();
+    showSuccess(loc,c);
+  }catch(e){
+    btn.disabled=false;
+    btn.innerHTML=lang==='zh'?'免费申请':'Get Early Access';
+    alert(lang==='zh'?'提交失败，请稍后重试':'Submission failed, please try again');
   }
-  list.push({email,ts:new Date().toISOString()});
-  localStorage.setItem('sm_waitlist',JSON.stringify(list));
-  const pos=BASE_COUNT+list.length;
-
-  setTimeout(()=>showSuccess(loc,pos),500);
 }
 
 function showSuccess(loc,pos){
