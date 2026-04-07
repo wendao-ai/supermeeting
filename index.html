@@ -199,12 +199,12 @@ footer{padding:40px 0;border-top:1px solid var(--border)}
   </div>
   <div class="nav-right">
     <div class="nav-links">
-      <a onclick="scrollTo('#features')"><span data-lang="zh">功能</span><span data-lang="en">Features</span></a>
-      <a onclick="scrollTo('#demo')"><span data-lang="zh">演示</span><span data-lang="en">Demo</span></a>
-      <a onclick="scrollTo('#roadmap')"><span data-lang="zh">路线图</span><span data-lang="en">Roadmap</span></a>
+      <a onclick="smoothScroll('#features')"><span data-lang="zh">功能</span><span data-lang="en">Features</span></a>
+      <a onclick="smoothScroll('#demo')"><span data-lang="zh">演示</span><span data-lang="en">Demo</span></a>
+      <a onclick="smoothScroll('#roadmap')"><span data-lang="zh">路线图</span><span data-lang="en">Roadmap</span></a>
     </div>
     <div class="lang-switch" id="langSwitch" onclick="toggleLang()">EN</div>
-    <button class="nav-cta" onclick="scrollTo('#cta')">
+    <button class="nav-cta" onclick="smoothScroll('#cta')">
       <span data-lang="zh">加入等候名单</span><span data-lang="en">Join Waitlist</span>
     </button>
   </div>
@@ -532,7 +532,7 @@ function updatePlaceholders(){
 updatePlaceholders();
 
 // --- Scroll ---
-function scrollTo(sel){document.querySelector(sel).scrollIntoView({behavior:'smooth'})}
+function smoothScroll(sel){document.querySelector(sel).scrollIntoView({behavior:'smooth'})}
 const nav=document.getElementById('nav');
 window.addEventListener('scroll',()=>nav.classList.toggle('scrolled',window.scrollY>40));
 
